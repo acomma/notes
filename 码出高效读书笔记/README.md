@@ -26,7 +26,7 @@ TCP/IP 是当前流行的网络传输协议框架。TCP 建立连接需要 3 次
 类关系
 
 类关系 | 英文名 | 描述 | 权力强侧 | 类图示例 | 示例说明
----|---|---|---|---|---|
+---|---|---|---|:---:|---|
 继承 | Generalization | 父类与子类之间的关系：is-a | 父类方 | ![](image/uml-generalization.png) | 小狗继承与动物，完全符合里氏代换
 实现 | Realization | 接口与实现类之间的关系：can-do | 接口方 | ![](image/uml-realization.png) | 小狗实现了狗叫的接口行为
 组合 | Composition | 比聚合更强的关系：contains-a | 整体方 | ![](image/uml-composition.png) | 头只能是身体强组合的一部分，两者完全不可分，具有相同的生命周期
