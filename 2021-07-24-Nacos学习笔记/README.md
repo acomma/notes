@@ -298,3 +298,147 @@ private void processPropertySource(String beanName, ConfigurableListableBeanFact
 在 bean 初始化阶段会调用 `NacosValueAnnotationBeanPostProcessor` 的 `postProcessPropertyValues` 方法完成对 `@NacosValue` 注解的属性的赋值。
 
 接着调用 `NacosValueAnnotationBeanPostProcessor` 的 `postProcessBeforeInitialization` 方法将 `@NacosValue` 注解的字段包装成 `NacosValueTarget` 对象加入 `placeholderNacosValueTargetMap` 对象中，当发生 `NacosConfigReceivedEvent` 事件时依次对所有字段重新赋值。
+
+## `ConfigService` 的创建过程
+
+在 `AnnotationNacosPropertySourceBuilder` 实例化后会调用它的 `afterPropertiesSet` 方法创建一个 `NacosConfigLoader` 对象。在创建 `NacosPropertySource` 时会调用 `NacosConfigLoader` 的 `load` 方法加载配置，在这里完成 `ConfigService` 的创建。
+
+```java
+public String load(String dataId, String groupId, Properties nacosProperties) throws RuntimeException {
+    try {
+        // nacosServiceFactory 是 CacheableEventPublishingNacosServiceFactory 对象的一个单例且不为 null，
+        configService = nacosServiceFactory != null
+                ? nacosServiceFactory.createConfigService(nacosProperties)
+                : NacosFactory.createConfigService(nacosProperties);
+    }
+    catch (NacosException e) {
+        throw new RuntimeException("ConfigService can't be created with dataId :" + dataId + " , groupId : " + groupId + " , properties : " + nacosProperties, e);
+    }
+    // 加载配置文件的内容
+    return NacosUtils.getContent(configService, dataId, groupId);
+}
+```
+
+先来看看 `CacheableEventPublishingNacosServiceFactory` 对象的 `createConfigService` 方法
+
+```java
+public ConfigService createConfigService(Properties properties) throws NacosException {
+    Properties copy = new Properties();
+    copy.putAll(properties);
+    // 1、获取 ConfigCreateWorker，在 CacheableEventPublishingNacosServiceFactory 的构造器中初始化
+    // 2、调用 ConfigCreateWorker 的 run 方法创建 ConfigSerivce 对象
+    return (ConfigService) createWorkerManager.get(ServiceType.CONFIG).run(copy, null);
+}
+```
+
+再来看看 `ConfigCreateWorker` 的 `run` 方法
+
+```java
+public ConfigService run(Properties properties, ConfigService service) throws NacosException {
+    // 先从缓存中获取 ConfigService，如果已经存在就不在创建
+    String cacheKey = identify(properties);
+    ConfigService configService = configServicesCache.get(cacheKey);
+
+    if (configService == null) {
+        if (service == null) {
+            // 通过反射的方式创建 NacosConfigService 对象
+            service = NacosFactory.createConfigService(properties);
+        }
+        // 使用装饰器模式赋予 ConfigService 事件发布的能力
+        configService = new EventPublishingConfigService(service, properties, getSingleton().context, getSingleton().nacosConfigListenerExecutor);
+        configServicesCache.put(cacheKey, configService);
+    }
+    return configService;
+}
+```
+
+重点来看看 `NacosConfigService` 的构建过程
+
+```java
+public NacosConfigService(Properties properties) throws NacosException {
+    String encodeTmp = properties.getProperty(PropertyKeyConst.ENCODE);
+    if (StringUtils.isBlank(encodeTmp)) {
+        encode = Constants.ENCODE;
+    } else {
+        encode = encodeTmp.trim();
+    }
+    initNamespace(properties);
+    // 创建了一个 HttpAgent 对象
+    // 1、ServerHttpAgent 处理服务器列表的变化，并向服务器做登录保持会话操作
+    // 2、MetricsHttpAgent 监听服务器的指标？
+    agent = new MetricsHttpAgent(new ServerHttpAgent(properties));
+    agent.start();
+    // 创建了一个长轮询的工作者对象
+    worker = new ClientWorker(agent, configFilterChainManager, properties);
+}
+```
+
+具体来看看 `ClientWorker` 的创建过程
+
+```java
+public ClientWorker(final HttpAgent agent, final ConfigFilterChainManager configFilterChainManager, final Properties properties) {
+    this.agent = agent;
+    this.configFilterChainManager = configFilterChainManager;
+
+    // Initialize the timeout parameter
+
+    init(properties);
+
+    executor = Executors.newScheduledThreadPool(1, new ThreadFactory() {
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r);
+            t.setName("com.alibaba.nacos.client.Worker." + agent.getName());
+            t.setDaemon(true);
+            return t;
+        }
+    });
+
+    executorService = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r);
+            t.setName("com.alibaba.nacos.client.Worker.longPolling." + agent.getName());
+            t.setDaemon(true);
+            return t;
+        }
+    });
+
+    // 延迟 10ms 后调用 checkConfigInfo 方法，检查配置是否有变更，
+    // 如果有变更，就调用监听器的 receiveConfigInfo 方法
+    executor.scheduleWithFixedDelay(new Runnable() {
+        @Override
+        public void run() {
+            try {
+                checkConfigInfo();
+            } catch (Throwable e) {
+                LOGGER.error("[" + agent.getName() + "] [sub-check] rotate check error", e);
+            }
+        }
+    }, 1L, 10L, TimeUnit.MILLISECONDS);
+}
+```
+
+## 如何接收配置变更？
+
+在前面 `NacosPropertySourcePostProcessor` 注册监听器时，注册的是经过包装后的 `DelegatingEventPublishingListener`，上一步中调用的 `receiveConfigInfo` 方法即为 `DelegatingEventPublishingListener` 的 `receiveConfigInfo` 方法。
+
+```java
+public void receiveConfigInfo(String content) {
+    onReceived(content);
+    publishEvent(content);
+}
+
+private void publishEvent(String content) {
+    NacosConfigReceivedEvent event = new NacosConfigReceivedEvent(configService, dataId, groupId, content, configType);
+    // 发布的事件会被 NacosValueAnnotationBeanPostProcessor#onApplicationEvent 方法监听到，
+    // 从而更新 bean 中被 @NacosValue 注解的属性的值
+    applicationEventPublisher.publishEvent(event);
+}
+
+private void onReceived(String content) {
+    // delegate 即为 NacosPropertySourcePostProcessor#addListenerIfAutoRefreshed 方法中创建的原始 Listener，
+    // 它会更新 environment 中的 NacosPropertySource 对象
+    delegate.receiveConfigInfo(content);
+}
+```
