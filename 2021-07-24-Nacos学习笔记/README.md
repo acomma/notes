@@ -363,9 +363,11 @@ public NacosConfigService(Properties properties) throws NacosException {
         encode = encodeTmp.trim();
     }
     initNamespace(properties);
-    // 创建了一个 HttpAgent 对象
-    // 1、ServerHttpAgent 处理服务器列表的变化，并向服务器做登录保持会话操作
-    // 2、MetricsHttpAgent 监听服务器的指标？
+    // 创建了一个 HttpAgent 对象，使用了装饰器模式
+    // 1、ServerHttpAgent 有两个作用，
+    //     1）管理 Nacos 服务器列表，完成向服务器发起的 http 请求
+    //     2）定时向服务器发起登录操作，保持 token 的更新
+    // 2、MetricsHttpAgent 在 1、ServerHttpAgent 的基础上增加了耗时监听指标
     agent = new MetricsHttpAgent(new ServerHttpAgent(properties));
     agent.start();
     // 创建了一个长轮询的工作者对象
@@ -442,3 +444,91 @@ private void onReceived(String content) {
     delegate.receiveConfigInfo(content);
 }
 ```
+
+## 加载配置的逻辑
+
+在前面创建 `NacosPropertySource` 的过程中会调用 `NacosUtils#getContent` 获取配置文件的内容。
+
+```java
+public static String getContent(ConfigService configService, String dataId, String groupId) {
+    String content = null;
+    try {
+        // 这里的 configService 的类型是 EventPublishingConfigService
+        content = configService.getConfig(dataId, groupId, DEFAULT_TIMEOUT);
+    }
+    catch (NacosException e) {
+        if (logger.isErrorEnabled()) {
+            logger.error("Can't get content from dataId : " + dataId + " , groupId : " + groupId, e);
+        }
+    }
+    return content;
+}
+```
+
+`getContent` 方法调用 `EventPublishingConfigService` 的 `getConfig` 方法加载配置内容，下面就来看看具体的逻辑
+
+```java
+public String getConfig(String dataId, String group, long timeoutMs) throws NacosException {
+    try {
+        // 这里的 configService 的类型是 NacosConfigService
+        return configService.getConfig(dataId, group, timeoutMs);
+    }
+    catch (NacosException e) {
+        // 如果超时会向外发布 NacosConfigTimeoutEvent 事件
+        if (NacosException.SERVER_ERROR == e.getErrCode()) { // timeout error
+            publishEvent(new NacosConfigTimeoutEvent(configService, dataId, group, timeoutMs, e.getErrMsg()));
+        }
+        throw e; // re-throw NacosException
+    }
+}
+```
+
+`NacosConfigService#getConfig` 方法调用了内部的 `getConfigInner` 方法
+
+```java
+private String getConfigInner(String tenant, String dataId, String group, long timeoutMs) throws NacosException {
+    group = null2defaultGroup(group);
+    ParamUtils.checkKeyParam(dataId, group);
+    ConfigResponse cr = new ConfigResponse();
+
+    cr.setDataId(dataId);
+    cr.setTenant(tenant);
+    cr.setGroup(group);
+
+    // 优先使用本地配置
+    String content = LocalConfigInfoProcessor.getFailover(agent.getName(), dataId, group, tenant);
+    if (content != null) {
+        LOGGER.warn("[{}] [get-config] get failover ok, dataId={}, group={}, tenant={}, config={}", agent.getName(), dataId, group, tenant, ContentUtils.truncateContent(content));
+        cr.setContent(content);
+        configFilterChainManager.doFilter(null, cr);
+        content = cr.getContent();
+        return content;
+    }
+
+    // 其次是用服务端配置
+    try {
+        String[] ct = worker.getServerConfig(dataId, group, tenant, timeoutMs);
+        cr.setContent(ct[0]);
+
+        configFilterChainManager.doFilter(null, cr);
+        content = cr.getContent();
+
+        return content;
+    } catch (NacosException ioe) {
+        if (NacosException.NO_RIGHT == ioe.getErrCode()) {
+            throw ioe;
+        }
+        LOGGER.warn("[{}] [get-config] get from server error, dataId={}, group={}, tenant={}, msg={}", agent.getName(), dataId, group, tenant, ioe.toString());
+    }
+
+    // 最后使用快照配置
+    LOGGER.warn("[{}] [get-config] get snapshot ok, dataId={}, group={}, tenant={}, config={}", agent.getName(), dataId, group, tenant, ContentUtils.truncateContent(content));
+    content = LocalConfigInfoProcessor.getSnapshot(agent.getName(), dataId, group, tenant);
+    cr.setContent(content);
+    configFilterChainManager.doFilter(null, cr);
+    content = cr.getContent();
+    return content;
+}
+```
+
+方法有点长，但逻辑很简单，就是审定了配置的获取有一个优先级，目的是为了容错。
