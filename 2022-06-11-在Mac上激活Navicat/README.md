@@ -91,7 +91,7 @@ $ make all
 >make: *** [patcher] Error 1
 >```
 >
->在仓库的 issues 列表中找到了解决办法。
+>在仓库的 issues 列表中找到了[解决办法](https://notabug.org/doublesine/navicat-keygen/issues/5)。
 >
 >使用 `brew install libplist` 命令安装的 libplist 的版本是 2.0.x，文件 libplist++.a 在目录 `/usr/local/opt/libplist/lib` 存在但是带有版本号，因此需要修改 Makefile 文件，将内容 `-lplist++` 替换为 `-lplist++-2.0`。
 
