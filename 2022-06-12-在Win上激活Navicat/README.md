@@ -151,8 +151,8 @@ $ navicat-keygen.exe -text .\RegPrivateKey.pem
 [*] Serial number:
 NAVF-EJYU-T7S7-J56W
 
-[*] Your name: zeroworker
-[*] Your organization: zeroworker
+[*] Your name: acomma
+[*] Your organization: acomma
 
 [*] Input request code in Base64: (Input empty line to end)
 ```
@@ -187,7 +187,7 @@ kzjD8lsG6ep6v2OZHIWr85Q/cqgYPmpcwyyYvrvg687rZzMWNfcROTwyvfZQkNpImEaKlpHApKxYXhs+
 {"K":"NAVFEJYUT7S7J56W", "DI":"49D5B5AE8FEDE4844197", "P":"WIN"}
 
 [*] Response Info:
-{"K":"NAVFEJYUT7S7J56W","DI":"49D5B5AE8FEDE4844197","N":"zeroworker","O":"zeroworker","T":1655021714}
+{"K":"NAVFEJYUT7S7J56W","DI":"49D5B5AE8FEDE4844197","N":"acomma","O":"acomma","T":1655021714}
 
 [*] Activation Code:
 vJtSo36m2zVJEfRaexsEQuqFczWLJYYFSPpiEXwabCBjD82OkEajH6C85nBZHdjqG5UgGZF4Mh3zxFVJsQsm9YQwtwhPJMu5Vs9fOya9ftYUeOmEQHafhpcOIwPDCKYcYcTpNNNSbE+CMdHA8CMmDjxNQwh6A3z0JDevMN7TxdFvZ4a8Chby5GpX1P0ZqBFEgwd//YjxvrctAvGHYu6JR5IAzv6b9UpMkxatOr+b0CnQ4S+7nbSdI0F+VyGJiuEl0S1SWYtVv3mKsGWLvrlq1YHma6sX+drr/IlpktI2KoC+JutHAUt1sGa1hAgIotwRcD9mNU2258Q8gQ8NmVCNmQ==

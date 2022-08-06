@@ -63,15 +63,15 @@ public class AesEncryptTypeHandler extends BaseTypeHandler<String> {
 
 ```yml
 mybatis:
-  type-handlers-package: me.zeroworker.groot
+  type-handlers-package: me.acomma.groot
 ```
 
 最后在需要加解密的敏感字段，比如在 `name` 字段，配置 TypeHandler
 
 ```xml
-<resultMap id="userResult" type="me.zeroworker.groot.domain.user.User">
+<resultMap id="userResult" type="me.acomma.groot.domain.user.User">
     ···
-    <result property="name" column="name" typeHandler="me.zeroworker.groot.infrastructure.dao.AesEncryptTypeHandler"/>
+    <result property="name" column="name" typeHandler="me.acomma.groot.infrastructure.dao.AesEncryptTypeHandler"/>
     ···
 </resultMap>
 
@@ -83,14 +83,14 @@ mybatis:
     )
     values (
         ···
-        #{name,typeHandler=me.zeroworker.groot.infrastructure.dao.AesEncryptTypeHandler}, 
+        #{name,typeHandler=me.acomma.groot.infrastructure.dao.AesEncryptTypeHandler}, 
         ···
     )
 </insert>
 
 <update id="update">
     update t_user
-    set name = #{name,typeHandler=me.zeroworker.groot.infrastructure.dao.AesEncryptTypeHandler}
+    set name = #{name,typeHandler=me.acomma.groot.infrastructure.dao.AesEncryptTypeHandler}
     where user_id = #{userId.id,jdbcType=BIGINT}
 </update>
 
@@ -126,8 +126,8 @@ public class AesEncryptTypeHandler extends BaseTypeHandler<String> {
 
 ```yml
 mybatis:
-  type-handlers-package: me.zeroworker.groot
-  type-aliases-package: me.zeroworker.groot
+  type-handlers-package: me.acomma.groot
+  type-aliases-package: me.acomma.groot
 ```
 
 `Mapper.xml` 就按上面的配置也没有问题，当然也可以在 `name` 字段的地方加上 `javaType="AesEncrypt"` 配置。
