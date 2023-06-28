@@ -125,7 +125,7 @@ JavaScript 代码在从上往下执行时，如果是宏任务则将它放入*�
 
 1. [深入理解JavaScript事件循环机制](https://www.cnblogs.com/yugege/p/9598265.html)
 2. [并发模型与事件循环](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/EventLoop)
-3. [JavaScript Visualized: Event Loop](https://dev.to/lydiahallie/javascript-visualized-event-loop-3dif)
+3. [JavaScript Visualized: Event Loop](https://dev.to/lydiahallie/javascript-visualized-event-loop-3dif)，中文翻译：[[译] JavaScript可视化：事件循环](https://zhuanlan.zhihu.com/p/137276025)
 4. [js-执行机制之同步、异步、宏任务、微任务](https://www.cnblogs.com/adanxiaobo/p/11660899.html)
 5. [深入理解JavaScript的事件循环（Event Loop）](https://blog.csdn.net/tzllxya/article/details/92674042)
 6. [JavaScript Event Loop](https://www.javascripttutorial.net/javascript-event-loop/)
