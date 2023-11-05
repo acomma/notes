@@ -96,8 +96,25 @@ $ chmod +x v2ctl
 
 ![](8.png)
 
+**第 13 步**
+
+设置订阅。打开 qv2ray 应用，点击 Groups 按钮打开 Group Editor 窗口
+
+![](9.png)
+
+在 Group Editor 窗口点击 Add Subscription 按钮，新增一个订阅
+
+![](10.png)
+
+然后选中新增的订阅①进行编辑
+
+![](11.png)
+
+在②处输入订阅的名称，选中③处的 Subscription Settings，勾选④处的 This Group is a subscription，在⑤处填入订阅地址，根据订阅地址返回的数据类型在第⑥处选择 SIP008 或者 Basic Base64，在第⑦设置更新周期，点击第⑧处的按钮更新订阅，最后点击第⑨处的按钮保存订阅。
+
 参考资料
 
 1. [qv2ray 中文站点](https://qv2ray.net/lang/zh/)
 2. [苹果MacOS电脑使用Qv2ray客户端上国外网站的方法](https://iyuantiao.me/qv2ray.html)
 3. [https://github.com/mgxray/Evanescence](https://github.com/mgxray/Evanescence)
+4. [苹果MacOS电脑上外网神器-Qv2ray使用教程](https://www.kejiplus.com/qv2ray.html)
