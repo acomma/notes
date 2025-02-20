@@ -15,7 +15,7 @@
 ### 准备教程
 
 1. [NUC8黑果安装教程](https://www.bilibili.com/video/BV1bE411G7hj)，上面两个软件均来源于该视频教程作者：[维客数码](https://space.bilibili.com/443044257)
-2. [指南：nuc8i5beh 安装黑苹果的教程，接近完美运行](https://chengxuxiaohei.cn/mac-anzhuang.html)
+2. [指南：nuc8i5beh 安装黑苹果的教程，接近完美运行](https://chengxuxiaohei.cn/mac-anzhuang.html)，[新地址](https://www.wangdu.site/hackintosh/1924.html)
 
 ### 安装过程
 
